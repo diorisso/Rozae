@@ -4,6 +4,7 @@ import (
 	"context"
 	"rozae/handlers/responses"
 	"rozae/models"
+	"rozae/repositories"
 	"rozae/utils"
 	"strconv"
 
@@ -12,12 +13,19 @@ import (
 
 type authRepository interface {
 	ObterPessoaPorEmail(ctx context.Context, email string) (*models.Pessoa, error)
-	CriarNovaPessoa(ctx context.Context, email string, senha string) (int, error)
+	CriarNovaPessoa(ctx context.Context, email string, nome string, senha string) (int, error)
 }
 
 type AuthService struct {
 	repository authRepository
 	jwtService *JwtService
+}
+
+func NewAuthService(repo *repositories.PessoaRepository, jwtService *JwtService) *AuthService {
+	return &AuthService{
+		repository: repo,
+		jwtService: jwtService,
+	}
 }
 
 func (s *AuthService) Login(ctx context.Context, email string, senha string) (*responses.LoginResponse, error) {
@@ -48,7 +56,7 @@ func (s *AuthService) Login(ctx context.Context, email string, senha string) (*r
 	return &retorno, nil
 }
 
-func (s *AuthService) Registrar(ctx context.Context, email string, senha string) (*responses.RegistrarResponse, error) {
+func (s *AuthService) Registrar(ctx context.Context, email string, nome string, senha string) (*responses.RegistrarResponse, error) {
 	pessoaJaExistente, err := s.repository.ObterPessoaPorEmail(ctx, email)
 
 	if err != nil {
@@ -64,7 +72,7 @@ func (s *AuthService) Registrar(ctx context.Context, email string, senha string)
 		return nil, err
 	}
 
-	novaPessoaId, err := s.repository.CriarNovaPessoa(ctx, email, string(senhaHashed))
+	novaPessoaId, err := s.repository.CriarNovaPessoa(ctx, email, nome, string(senhaHashed))
 	if err != nil {
 		return nil, err
 	}

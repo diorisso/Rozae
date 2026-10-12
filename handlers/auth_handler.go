@@ -10,15 +10,21 @@ import (
 )
 
 type authService interface {
-	Login(ctx context.Context, email string, senha string) (*responses.RegistrarResponse, error)
-	Registrar(ctx context.Context, email string, senha string) (*responses.RegistrarResponse, error)
+	Login(ctx context.Context, email string, senha string) (*responses.LoginResponse, error)
+	Registrar(ctx context.Context, email string, nome string, senha string) (*responses.RegistrarResponse, error)
 }
 
 type AuthHandler struct {
 	service authService
 }
 
-func (h *AuthHandler) AdicionarIoC(mux *http.ServeMux) {
+func NewAuthHandler(s authService) *AuthHandler {
+	return &AuthHandler{
+		service: s,
+	}
+}
+
+func (h *AuthHandler) AdicionarRotas(mux *http.ServeMux) {
 	mux.HandleFunc("POST /auth/login", utils.WithJson(h.Login))
 	mux.HandleFunc("POST /auth/registrar", utils.WithJson(h.Login))
 }
@@ -40,7 +46,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request, obj requests
 }
 
 func (h *AuthHandler) Registrar(w http.ResponseWriter, r *http.Request, obj requests.RegistrarRequest) {
-	retorno, err := h.service.Registrar(r.Context(), obj.Email, obj.Senha)
+	retorno, err := h.service.Registrar(r.Context(), obj.Email, obj.Nome, obj.Senha)
 
 	if err != nil {
 		if errors.Is(err, utils.ErrEmailJaCadastrado) {
